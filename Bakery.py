@@ -38,5 +38,15 @@ def test() -> bool:
 
     return True
 
+@b.target
+def fmt() -> bool:
+    """format all go code in the codebase"""
+
+    b.shell_pass(f"gofmt -w {SERVER_DIR}")
+    b.shell_pass(f"gofmt -w {CLIENT_DIR}")
+    b.shell_pass(f"gofmt -w {SHARED_DIR}")
+
+    return True
+
 if __name__ == "__main__":
     b.compile()
