@@ -1,3 +1,3 @@
 # TCP VM
 
-![Whiteboard Image](../../assets/whiteboard.jpg)
+![Whiteboard Image](./assets/whiteboard.jpg)
