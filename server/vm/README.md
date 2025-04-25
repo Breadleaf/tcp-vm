@@ -16,8 +16,9 @@ documenting the specifications of the virtual machine.
 ## Registers
 
 There are 4 8-bit registers. Since we know 2^2=4 we can address each register
-with just 2-bits. 3 Of these registers are general purpose `R0-R3` and the last
-one is the pointer to the top of the stack `SP`.
+with just 2-bits. 2 Of these registers are general purpose `R0-R1`, the next
+register is the program counter `PC`, and the last one is the pointer to the
+top of the stack `SP`.
 
 ## ISA
 
@@ -31,8 +32,9 @@ Each instruction is in the shape of:
 Since this means the opcode is 4-bits wide, we get 2^4=16 possible
 instructions. This is limiting but possible. One such limitation is that the
 first register Ra will also be used as the register result for all
-instructions. For example ADD R0 R1 would be the same as R0 = R0 + R1.
+instructions. For example `ADD R0 R1` would be the same as `R0 = R0 + R1`.
 
+Instructions:
 | Opcode (Binary) | Opcode (Hex) | Instruction | Effect |
 | :-: | :-: | :-: | :-: |
 | 0000 | 0 | MOV Ra Rb | Ra = Rb |
@@ -45,16 +47,29 @@ instructions. For example ADD R0 R1 would be the same as R0 = R0 + R1.
 | 0111 | 7 | SHR Ra Rb | Ra = Ra >> Rb |
 | 1000 | 8 | LDI Ra, Imm | R0 = Imm |
 | 1001 | 9 | PSH Ra | Memory\[SP\] = Ra, SP = SP - 1 |
-| 1010 | A | POP Rb | SP = SP + 1, Rb = Memory\[SP\] |
+| 1010 | A | POP Ra | SP = SP + 1, Ra = Memory\[SP\] |
 | 1011 | B | CMP Ra Rb | sets flags based on: Ra - Rb |
-| 1100 | C | JEQ | if eq flag: PC = R0 |
-| 1101 | D | LOD Ra Rb | Ra = Memory\[Rb\] |
-| 1110 | E | STR Ra Rb | Memory\[Rb\] = Ra |
-| 1111 | F | HLT | stop execution |
+| 1100 | C | JLT | if lt flag: PC = R0 |
+| 1101 | D | LDI Ra, Imm | Ra = Memory\[Imm\] |
+| 1110 | E | STI Ra, Imm | Memory\[Imm\] = Ra |
+| 1111 | F | SYS | syscall (see [Syscalls](#syscalls)) |
 
 Note: Instructions with a comma in their `Instruction` will use 2 words. This
 way they can operate using 8-bit immediate values which is also the maximum
 value I plan to implement on this project.
+
+## Syscalls
+
+The `SYS` opcode will expect `R0` to hold the syscall number. The stack will
+contain all the arguments to the function.
+
+Syscalls:
+| Hex Code | Name | Stack Args | Effect |
+| :-: | :-: | :-: |
+| 0 | SYS_EXIT | \[SP\]: exit code | exit(\[SP\]) |
+| 1 | SYS_OUT | \[SP\]: number of char <br> \[SP-1..N\]: remainder of arguments (WARNING: stack overflow) | ... |
+| 2 | SYS_RAND | NONE | rand(0, 255) |
+| 3 | SYS_WAIT | \[SP\]: number of cycles to wait |
 
 ## Memory
 
