@@ -6,6 +6,7 @@ GIT_ROOT = b.shell_strict("git rev-parse --show-toplevel")
 
 SERVER_DIR = f"{GIT_ROOT}/server"
 CLIENT_DIR = f"{GIT_ROOT}/client"
+SHARED_DIR = f"{GIT_ROOT}/shared"
 BUILD_DIR = f"{GIT_ROOT}/build"
 
 GO = b.shell_strict("which go")
@@ -24,6 +25,16 @@ def build() -> bool:
     # build the client
     b.shell_strict(f"cd {CLIENT_DIR} && {GO} build")
     b.shell_strict(f"mv {CLIENT_DIR}/client {BUILD_DIR}")
+
+    return True
+
+@b.target
+def test() -> bool:
+    """test all 3 workspaces"""
+
+    b.shell_pass(f"go test {SERVER_DIR}/... -v")
+    b.shell_pass(f"go test {CLIENT_DIR}/... -v")
+    b.shell_pass(f"go test {SHARED_DIR}/... -v")
 
     return True
 
