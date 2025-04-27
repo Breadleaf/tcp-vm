@@ -15,7 +15,7 @@ func Test_lex(t *testing.T) {
 		fmt.Printf("lexing file: %s\n", file)
 		tokens, err := lex(file)
 		if err != nil {
-			t.Errorf("lexing error: %v", err)
+			t.Fatalf("lexing error: %v", err)
 		}
 		fmt.Printf("lexed tokens: %+v\n", tokens)
 	}
