@@ -14,6 +14,3 @@ main:
 	# SYS_EXIT
 	LDI R0, 0x00
 	SYS R0
-
-	JMP 111, main
-	LDA R0, x
