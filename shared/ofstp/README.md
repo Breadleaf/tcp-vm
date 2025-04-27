@@ -9,7 +9,7 @@ Stateless packets do not contain the state of the `stack` or the `process flag`.
 More expicitly they only transfer the `.data` and `.text` sections. This packet
 type is only used in the initial transfer from client to router to server. This
 packet will then be loaded into the virtual machine on the server and all
-subsequent packets will either be [Statefull packets](#statefull-packets) or
+subsequent packets will either be [Stateful packets](#stateful-packets) or
 they will be [Return packets](#return-packets).
 
 These packets will be 192 bytes (1 + 16 + 175) long. 1 byte for the packet type,
@@ -25,9 +25,9 @@ These packets will be 192 bytes (1 + 16 + 175) long. 1 byte for the packet type,
 .
 ```
 
-## Statefull packets
+## Stateful packets
 
-Statefull packets will contain all four registers in order
+Stateful packets will contain all four registers in order
 (`R0`, `R1`, `SP`, `PC`) followed by the entire memory of the virtual machine.
 The actual information from the packet is up to the receiver to derive. An
 example would be checking the upper 5 bits of `Mem(79)` to see if the process
@@ -46,15 +46,15 @@ a process to be sent from the server back to the router).
 175 Bytes # .text section
 ```
 
-Notice: the `.text` section is not statefull, this is intentional. The reason
-for keeping this data in the statefull packet is such that if a process is not
+Notice: the `.text` section is not stateful, this is intentional. The reason
+for keeping this data in the stateful packet is such that if a process is not
 assigned to its preferred machine, it will need to reconstruct it's instructions
 in the memory of the new virtual machine. ***More information about preferred
 machines in the router documentation***
 
 ## Return packets
 
-Return packets are created from [Statefull packets](#statefull-packets). They
+Return packets are created from [Stateful packets](#stateful-packets). They
 contain the output from a process and its exit code OR if it has errored, it
 will have the reason the process has had to exit and its exit status. Packet
 size is within the bounds of 2 Bytes to 1500 Bytes
