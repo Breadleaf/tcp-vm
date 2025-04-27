@@ -6,6 +6,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"tcp-vm/shared/util"
 )
 
 type ttype int
@@ -67,8 +68,58 @@ func (t token) String() string {
 	return fmt.Sprintf("token('%s'/%v/%d)", t.val, t.typ, t.lin)
 }
 
-func Assemble(sourcePath string) error {
-	return nil
+func Assemble(sourcePath string) ([]byte, []byte, error) {
+	logTag := "tcp-vm/shared/assembler - assembler.go - Assemble()"
+	util.LogStart(logTag)
+	defer util.LogEnd(logTag)
+
+	e := []byte{}
+
+	tokens, err := lex("./add_data.asm")
+	if err != nil {
+		return e, e, fmt.Errorf("lex() failed: %v", err)
+	}
+
+	g, err := newGrammar()
+	if err != nil {
+		return e, e, fmt.Errorf("newGrammar() failed: %v", err)
+	}
+
+	llpt, err := newLLParseTable(*g)
+	if err != nil {
+		return e, e, fmt.Errorf("newLLParseTable() failed: %v", err)
+	}
+
+	start := grammarItem{
+		Value: "asm",
+		Type:  NonTerminal,
+	}
+
+	st, err := llpt.llTabularParse(tokens, start)
+	if err != nil {
+		return e, e, fmt.Errorf("llTabularParse() failed: %v", err)
+	}
+
+	util.LogMessage(func() {
+		fmt.Println("CST:")
+		st.prettyPrint()
+	})
+
+	if simp := st.applySDT(); simp != nil {
+		util.LogMessage(func() {
+			fmt.Println("AST:")
+			simp.prettyPrint()
+		})
+
+		data, text, err := simp.compile()
+		if err != nil {
+			return e, e, fmt.Errorf("compile() filed: %v", err)
+		}
+
+		return data, text, nil
+	}
+
+	return e, e, fmt.Errorf("appltSDT() returned nil")
 }
 
 func lex(sourcePath string) ([]token, error) {
