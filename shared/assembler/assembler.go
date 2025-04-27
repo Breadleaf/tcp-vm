@@ -12,12 +12,17 @@ type ttype int
 
 const (
 	Section ttype = iota
-	Label
-	Instruction
+	CommandX
+	CommandY
+	CommandZ
+	CommandZJ
 	Register
+	Mask
 	Immediate
+	Identifier
 	Comma
 	Equals
+	Colon
 	Unknown
 )
 
@@ -25,18 +30,28 @@ func (tt ttype) String() string {
 	switch tt {
 	case Section:
 		return "ttype.Section"
-	case Label:
-		return "ttype.Label"
-	case Instruction:
-		return "ttype.Instruction"
+	case CommandX:
+		return "ttype.CommandX"
+	case CommandY:
+		return "ttype.CommandY"
+	case CommandZ:
+		return "ttype.CommandZ"
+	case CommandZJ:
+		return "ttype.CommandZJ"
 	case Register:
 		return "ttype.Register"
+	case Mask:
+		return "ttype.Mask"
 	case Immediate:
 		return "ttype.Immediate"
+	case Identifier:
+		return "ttype.Identifier"
 	case Comma:
 		return "ttype.Comma"
 	case Equals:
 		return "ttype.Equals"
+	case Colon:
+		return "ttype.Colon"
 	default:
 		return "ttype.Unknown"
 	}
@@ -59,12 +74,17 @@ func Assemble(sourcePath string) error {
 func lex(sourcePath string) ([]token, error) {
 	tokenSpecs := map[ttype]string{
 		Section: `\..*`,
-		Label: `.*:`,
-		Instruction: `[A-Z]*`,
+		CommandX: `(MOV|CMP|SHL|SHR|ADD|SUB|AND|ORR)`,
+		CommandY: `(NOT|PSH|POP|SYS)`,
+		CommandZ: `(LDI|LDA|STA)`,
+		CommandZJ: `(JMP)`,
 		Register: `(R\d|PC|SP)`,
+		Mask: `[0-1]{3}`,
 		Immediate: `0x[A-F0-9]{2}`,
+		Identifier: `[a-z]*`,
 		Comma: `,`,
 		Equals: `=`,
+		Colon: `:`,
 	}
 
 	type spec struct {
