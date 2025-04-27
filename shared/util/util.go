@@ -2,7 +2,6 @@ package util
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"tcp-vm/shared/globals"
 )
@@ -30,11 +29,4 @@ func LogEnd(logTag string) {
 		fmt.Println(GenerateLine(100))
 		fmt.Printf("%s - debug log end\n", logTag)
 	}
-}
-
-func Assert(condition bool, message string) {
-	if condition {
-		return
-	}
-	panic(message)
 }

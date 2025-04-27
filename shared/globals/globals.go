@@ -1,8 +1,8 @@
 package globals
 
 import (
-	"os"
 	"fmt"
+	"os"
 )
 
 var DEBUG bool
