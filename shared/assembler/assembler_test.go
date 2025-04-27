@@ -1,8 +1,8 @@
 package assembler
 
 import (
-	"testing"
 	"fmt"
+	"testing"
 )
 
 func Test_lex(t *testing.T) {

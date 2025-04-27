@@ -1,13 +1,13 @@
 package assembler
 
 import (
-	"strings"
 	"os"
+	"strings"
 )
 
 var LOG_PARSED_GRAMMAR_OBJECT bool
 
-var grammarText string 
+var grammarText string
 
 func init() {
 	LOG_PARSED_GRAMMAR_OBJECT = os.Getenv("LOG_PARSED") != ""
@@ -21,7 +21,7 @@ data -> lambda
 dataList -> dataItem dataList
 dataList -> lambda
 
-dataItem -> ident = immediate
+dataItem -> identifier = immediate
 
 text -> .text textList
 text -> lambda
@@ -32,14 +32,14 @@ textList -> yInstruction textList
 textList -> zInstruction textList
 textList -> lambda
 
-xInstruction -> xCommand register register
+xInstruction -> CommandX register register
 
-yInstruction -> yCommand register
+yInstruction -> CommandY register
 
-zInstruction -> zCommand register , zItem
-zInstruction -> zjCommand mask , zItem
+zInstruction -> CommandZ register , zItem
+zInstruction -> CommandZJ mask , zItem
 
 zItem -> immediate
-zItem -> ident
+zItem -> identifier
 	`)
 }

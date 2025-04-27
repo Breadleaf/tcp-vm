@@ -1,8 +1,8 @@
 package assembler
 
 import (
-	"tcp-vm/shared/util"
 	"slices"
+	"tcp-vm/shared/util"
 
 	"bufio"
 	"fmt"
@@ -39,7 +39,7 @@ type grammarItem struct {
 
 func (gi *grammarItem) Equal(gi2 *grammarItem) bool {
 	return (gi.Type == gi2.Type &&
-	gi.Value == gi2.Value)
+		gi.Value == gi2.Value)
 }
 
 type grammar struct {
@@ -113,7 +113,7 @@ func (g *grammar) parseGrammarText() error {
 			fmt.Printf("%s: [", lhs)
 			for i, s := range group {
 				fmt.Printf("'%s'", s)
-				if i < len(group) - 1 {
+				if i < len(group)-1 {
 					fmt.Printf(" ")
 				}
 			}

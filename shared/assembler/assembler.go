@@ -1,11 +1,11 @@
 package assembler
 
 import (
-	"strings"
-	"os"
 	"bufio"
 	"fmt"
+	"os"
 	"regexp"
+	"strings"
 )
 
 type ttype int
@@ -73,23 +73,23 @@ func Assemble(sourcePath string) error {
 
 func lex(sourcePath string) ([]token, error) {
 	tokenSpecs := map[ttype]string{
-		Section: `\..*`,
-		CommandX: `(MOV|CMP|SHL|SHR|ADD|SUB|AND|ORR)`,
-		CommandY: `(NOT|PSH|POP|SYS)`,
-		CommandZ: `(LDI|LDA|STA)`,
-		CommandZJ: `(JMP)`,
-		Register: `(R\d|PC|SP)`,
-		Mask: `[0-1]{3}`,
-		Immediate: `0x[A-F0-9]{2}`,
+		Section:    `\..*`,
+		CommandX:   `(MOV|CMP|SHL|SHR|ADD|SUB|AND|ORR)`,
+		CommandY:   `(NOT|PSH|POP|SYS)`,
+		CommandZ:   `(LDI|LDA|STA)`,
+		CommandZJ:  `(JMP)`,
+		Register:   `(R\d|PC|SP)`,
+		Mask:       `[0-1]{3}`,
+		Immediate:  `0x[A-F0-9]{2}`,
 		Identifier: `[a-z]*`,
-		Comma: `,`,
-		Equals: `=`,
-		Colon: `:`,
+		Comma:      `,`,
+		Equals:     `=`,
+		Colon:      `:`,
 	}
 
 	type spec struct {
 		typ ttype
-		re *regexp.Regexp
+		re  *regexp.Regexp
 	}
 
 	var specs []spec
@@ -104,7 +104,7 @@ func lex(sourcePath string) ([]token, error) {
 		}
 		specs = append(specs, spec{
 			typ: tt,
-			re: re,
+			re:  re,
 		})
 	}
 
