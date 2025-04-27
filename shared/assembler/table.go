@@ -92,6 +92,14 @@ func (table *llParseTable) llTabularParse(
 	for len(stack) > 0 {
 		x, _ := stack.Pop()
 
+		if x.Type == Terminal && x.Value == "$" {
+			if _, err := ts.Pop(); err != nil {
+				return nil, fmt.Errorf("unexpected end of input")
+			}
+			continue
+		}
+
+		// ascend marker
 		if x == marker {
 			if current.Parent != nil {
 				current = current.Parent

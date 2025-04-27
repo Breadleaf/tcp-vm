@@ -44,4 +44,20 @@ func Test_llTabularParse(t *testing.T) {
 	}
 
 	st.prettyPrint()
+
+	if simp := st.applySDT(); simp != nil {
+		simp.prettyPrint()
+		data, text, err := simp.compile()
+		if err != nil {
+			t.Fatalf("compile() filed: %v", err)
+		}
+		t.Logf("data section:\n")
+		for _, b := range data {
+			t.Logf("%+v", b)
+		}
+		t.Logf("text section:\n")
+		for _, b := range text {
+			t.Logf("%+v", b)
+		}
+	}
 }
