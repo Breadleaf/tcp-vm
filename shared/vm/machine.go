@@ -41,15 +41,22 @@ const (
 )
 
 const (
-	vmMemStart = vmDataStart
-	vmMemEnd   = vmTextEnd
+	MemoryStart = vmDataStart
+	MemoryEnd   = vmTextEnd
+)
+
+const (
+	DataStart  = vmDataStart
+	StackStart = vmStackStart
+	FlagStart  = vmFlagStart
+	TextStart  = vmTextStart
 )
 
 // hardware
 
-type Register uint8
+type Register byte
 
-type Memory [vmMemSizeWords]uint8
+type Memory [vmMemSizeWords]byte
 
 // virtual machine
 
@@ -59,18 +66,17 @@ type VirtualMachine struct {
 	SP     Register
 	PC     Register
 	Memory Memory
+	Output string
 }
 
-func NewVirtualMachine(
+func (vm *VirtualMachine) ResetFromStateless(
 	data [vmDataCount]byte,
 	text [vmTextCount]byte,
-) *VirtualMachine {
-	vm := &VirtualMachine{
-		R0: Register(0),
-		R1: Register(0),
-		SP: Register(0),
-		PC: Register(0),
-	}
+) {
+	vm.R0 = Register(0)
+	vm.R1 = Register(0)
+	vm.SP = Register(0)
+	vm.PC = Register(0)
 
 	copy(vm.Memory[vmDataStart:vmDataEnd+1], data[:]) // end is exclusive
 
@@ -82,17 +88,55 @@ func NewVirtualMachine(
 
 	copy(vm.Memory[vmTextStart:vmTextEnd+1], text[:]) // end is exclusive
 
-	return vm
+	vm.Output = ""
+}
+
+func (vm *VirtualMachine) ResetFromStateful(
+	r0 byte,
+	r1 byte,
+	sp byte,
+	pc byte,
+	data [vmDataCount]byte,
+	stack [vmStackCount]byte,
+	flag [vmFlagCount]byte,
+	text [vmTextCount]byte,
+) {
+	vm.R0 = Register(r0)
+	vm.R1 = Register(r1)
+	vm.SP = Register(sp)
+	vm.PC = Register(pc)
+
+	copy(vm.Memory[vmDataStart:vmDataEnd+1], data[:]) // end is exclusive
+	copy(vm.Memory[vmStackStart:vmStackEnd+1], stack[:]) // end is exclusive
+	copy(vm.Memory[vmFlagStart:vmFlagEnd+1], flag[:]) // end is exclusive
+	copy(vm.Memory[vmTextStart:vmTextEnd+1], text[:]) // end is exclusive
+
+	vm.Output = ""
 }
 
 func (vm *VirtualMachine) String() string {
-	out := ""
-	out += fmt.Sprintf(
+	out := fmt.Sprintf(
 		"R0: %d, R1: %d, SP: %d, PC: %d\n",
 		vm.R0, vm.R1, vm.SP, vm.PC,
 	)
+
 	for idx, byt := range vm.Memory {
-		out += fmt.Sprintf("%d: %08b", idx, byt)
+		// print section labels
+		switch idx {
+		case vmDataStart:
+			out += "Data Section:\n"
+		case vmStackStart:
+			out += "Stack Section:\n"
+		case vmFlagStart:
+			out += "Flag Section:\n"
+		case vmTextStart:
+			out += "Text Section:\n"
+		}
+
+		out += fmt.Sprintf("%3d: %08b\n", idx, byt)
 	}
+
+	out += fmt.Sprintf("Output:\n%s\n------\n", vm.Output)
+
 	return out
 }

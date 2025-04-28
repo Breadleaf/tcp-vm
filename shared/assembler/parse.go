@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 	g "tcp-vm/shared/globals"
+	"tcp-vm/shared/vm"
 )
 
 type syntaxTree struct {
@@ -18,11 +19,6 @@ var marker = grammarItem{
 	Type:  Terminal,
 	Value: "<MARKER>",
 }
-
-const (
-	dataBaseOffset = 0
-	textBaseOffset = 80
-)
 
 func newSyntaxTree(sym grammarItem, data string) *syntaxTree {
 	st := &syntaxTree{
@@ -146,7 +142,7 @@ func (st *syntaxTree) compile() ([g.DataSectionLength]byte, [g.TextSectionLength
 			if prev, dup := dataLabels[label]; dup {
 				return ErrorData, ErrorText, fmt.Errorf("duplicate data label '%s' at address %d", label, prev)
 			}
-			dataLabels[label] = uint8(len(dataSection)) + dataBaseOffset
+			dataLabels[label] = uint8(len(dataSection)) + vm.DataStart
 
 			// identifier at [0], immediate at [1]
 			lit := item.Children[1].Data
@@ -180,7 +176,7 @@ func (st *syntaxTree) compile() ([g.DataSectionLength]byte, [g.TextSectionLength
 			if _, dup := textLabels[lbl]; dup {
 				return ErrorData, ErrorText, fmt.Errorf("duplicate text label '%s'", lbl)
 			}
-			textLabels[lbl] = addr + textBaseOffset
+			textLabels[lbl] = addr + vm.TextStart
 		case "xInstruction", "yInstruction", "zInstruction":
 			if addr >= g.TextSectionLength {
 				return ErrorData, ErrorText, fmt.Errorf("text section overflow: exceeds %d words", g.TextSectionLength)

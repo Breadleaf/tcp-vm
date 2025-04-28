@@ -28,13 +28,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	var dataSection [g.DataSectionLength]byte
-	copy(dataSection[:], data)
-
-	var textSection [g.TextSectionLength]byte
-	copy(textSection[:], text)
-
-	vm := vm.NewVirtualMachine(dataSection, textSection)
+	vm := new(vm.VirtualMachine)
+	vm.ResetFromStateless(data, text)
 
 	fmt.Printf("vm:\n%v", vm)
 }
