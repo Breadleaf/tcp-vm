@@ -6,6 +6,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	g "tcp-vm/shared/globals"
 	"tcp-vm/shared/util"
 )
 
@@ -68,26 +69,24 @@ func (t token) String() string {
 	return fmt.Sprintf("token('%s'/%v/%d)", t.val, t.typ, t.lin)
 }
 
-func Assemble(sourcePath string) ([]byte, []byte, error) {
+func Assemble(sourcePath string) ([g.DataSectionLength]byte, [g.TextSectionLength]byte, error) {
 	logTag := "tcp-vm/shared/assembler - assembler.go - Assemble()"
 	util.LogStart(logTag)
 	defer util.LogEnd(logTag)
 
-	e := []byte{}
-
-	tokens, err := lex("./add_data.asm")
+	tokens, err := lex(sourcePath)
 	if err != nil {
-		return e, e, fmt.Errorf("lex() failed: %v", err)
+		return ErrorData, ErrorText, fmt.Errorf("lex() failed: %v", err)
 	}
 
 	g, err := newGrammar()
 	if err != nil {
-		return e, e, fmt.Errorf("newGrammar() failed: %v", err)
+		return ErrorData, ErrorText, fmt.Errorf("newGrammar() failed: %v", err)
 	}
 
 	llpt, err := newLLParseTable(*g)
 	if err != nil {
-		return e, e, fmt.Errorf("newLLParseTable() failed: %v", err)
+		return ErrorData, ErrorText, fmt.Errorf("newLLParseTable() failed: %v", err)
 	}
 
 	start := grammarItem{
@@ -97,7 +96,7 @@ func Assemble(sourcePath string) ([]byte, []byte, error) {
 
 	st, err := llpt.llTabularParse(tokens, start)
 	if err != nil {
-		return e, e, fmt.Errorf("llTabularParse() failed: %v", err)
+		return ErrorData, ErrorText, fmt.Errorf("llTabularParse() failed: %v", err)
 	}
 
 	util.LogMessage(func() {
@@ -113,13 +112,13 @@ func Assemble(sourcePath string) ([]byte, []byte, error) {
 
 		data, text, err := simp.compile()
 		if err != nil {
-			return e, e, fmt.Errorf("compile() filed: %v", err)
+			return ErrorData, ErrorText, fmt.Errorf("compile() filed: %v", err)
 		}
 
 		return data, text, nil
 	}
 
-	return e, e, fmt.Errorf("appltSDT() returned nil")
+	return ErrorData, ErrorText, fmt.Errorf("appltSDT() returned nil")
 }
 
 func lex(sourcePath string) ([]token, error) {

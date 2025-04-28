@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	g "tcp-vm/shared/globals"
 )
 
 type syntaxTree struct {
@@ -115,9 +116,7 @@ func (st *syntaxTree) applySDT() *syntaxTree {
 	return st
 }
 
-// data <= 16 words
-// text <= 175 words
-func (st *syntaxTree) compile() ([]byte, []byte, error) {
+func (st *syntaxTree) compile() ([g.DataSectionLength]byte, [g.TextSectionLength]byte, error) {
 	dataLabels := map[string]uint8{}
 	textLabels := map[string]uint8{}
 	var dataSection []uint8
@@ -140,12 +139,12 @@ func (st *syntaxTree) compile() ([]byte, []byte, error) {
 			if item.Symbol.Value != "dataItem" {
 				continue
 			}
-			if len(dataSection) >= 16 {
-				return nil, nil, fmt.Errorf("data section overflow: exceeds 16 words")
+			if len(dataSection) >= g.DataSectionLength {
+				return ErrorData, ErrorText, fmt.Errorf("data section overflow: exceeds %d words", g.DataSectionLength)
 			}
 			label := item.Children[0].Data
 			if prev, dup := dataLabels[label]; dup {
-				return nil, nil, fmt.Errorf("duplicate data label '%s' at address %d", label, prev)
+				return ErrorData, ErrorText, fmt.Errorf("duplicate data label '%s' at address %d", label, prev)
 			}
 			dataLabels[label] = uint8(len(dataSection)) + dataBaseOffset
 
@@ -153,7 +152,7 @@ func (st *syntaxTree) compile() ([]byte, []byte, error) {
 			lit := item.Children[1].Data
 			val, err := parseImmediate(lit)
 			if err != nil {
-				return nil, nil, err
+				return ErrorData, ErrorText, err
 			}
 			dataSection = append(dataSection, val)
 		}
@@ -179,18 +178,19 @@ func (st *syntaxTree) compile() ([]byte, []byte, error) {
 		case "identifier":
 			lbl := node.Data
 			if _, dup := textLabels[lbl]; dup {
-				return nil, nil, fmt.Errorf("duplicate text label '%s'", lbl)
+				return ErrorData, ErrorText, fmt.Errorf("duplicate text label '%s'", lbl)
 			}
 			textLabels[lbl] = addr + textBaseOffset
 		case "xInstruction", "yInstruction", "zInstruction":
-			if addr >= 175 {
-				return nil, nil, fmt.Errorf("text section overflow: exceeds 175 words")
+			if addr >= g.TextSectionLength {
+				return ErrorData, ErrorText, fmt.Errorf("text section overflow: exceeds %d words", g.TextSectionLength)
 			}
 			addr++
 		}
 	}
+	// this is technically not needed, I will enforce it for good code practice
 	if _, ok := textLabels["main"]; !ok {
-		return nil, nil, fmt.Errorf("missing 'main' label in text section")
+		return ErrorData, ErrorText, fmt.Errorf("missing 'main' label in text section")
 	}
 
 	// Emit code over instrs
@@ -200,7 +200,7 @@ func (st *syntaxTree) compile() ([]byte, []byte, error) {
 			op := node.Children[0].Data
 			b, err := compileX(op, node.Children[1:])
 			if err != nil {
-				return nil, nil, err
+				return ErrorData, ErrorText, err
 			}
 			textSection = append(textSection, b)
 
@@ -208,7 +208,7 @@ func (st *syntaxTree) compile() ([]byte, []byte, error) {
 			op := node.Children[0].Data
 			b, err := compileY(op, node.Children[1:])
 			if err != nil {
-				return nil, nil, err
+				return ErrorData, ErrorText, err
 			}
 			textSection = append(textSection, b)
 
@@ -218,25 +218,24 @@ func (st *syntaxTree) compile() ([]byte, []byte, error) {
 			if op == "JMP" {
 				b, imm, err := compileZJ(op, args, textLabels)
 				if err != nil {
-					return nil, nil, err
+					return ErrorData, ErrorText, err
 				}
 				textSection = append(textSection, b, imm)
 			} else {
 				b, imm, err := compileZ(op, args, dataLabels)
 				if err != nil {
-					return nil, nil, err
+					return ErrorData, ErrorText, err
 				}
 				textSection = append(textSection, b, imm)
 			}
 		}
 	}
 
-	// Convert to []byte
-	dataOut := make([]byte, len(dataSection))
+	dataOut := [g.DataSectionLength]byte{}
 	for i, v := range dataSection {
 		dataOut[i] = byte(v)
 	}
-	textOut := make([]byte, len(textSection))
+	textOut := [g.TextSectionLength]byte{}
 	for i, v := range textSection {
 		textOut[i] = byte(v)
 	}

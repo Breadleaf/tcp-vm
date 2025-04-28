@@ -3,6 +3,14 @@ package assembler
 import (
 	"os"
 	"strings"
+	g "tcp-vm/shared/globals"
+)
+
+// used across the assembler to fulfill the return types of functions that are
+// returning errors but need to send a []byte of a size
+var (
+	ErrorData = [g.DataSectionLength]byte{}
+	ErrorText = [g.TextSectionLength]byte{}
 )
 
 var LOG_PARSED_GRAMMAR_OBJECT bool

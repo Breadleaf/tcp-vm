@@ -2,6 +2,46 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"tcp-vm/shared/assembler"
+	g "tcp-vm/shared/globals"
+	"tcp-vm/shared/vm"
+)
+
+func main() {
+	if len(os.Args) != 2 {
+		fmt.Println("usage: go run server/main.go [fpath]")
+		os.Exit(1)
+	}
+
+	fmt.Println(os.Args[1])
+
+	data, text, err := assembler.Assemble(os.Args[1])
+	if err != nil {
+		fmt.Printf("assembler does like that one: %v", err)
+		os.Exit(1)
+	}
+
+	if len(data) != g.DataSectionLength || len(text) != g.TextSectionLength {
+		fmt.Printf("len(data)=%d\nlen(text)=%d\n", len(data), len(text))
+		fmt.Printf("assembler needs to check this and return correct type, this is to prevent future foot guns: %v", err)
+		os.Exit(1)
+	}
+
+	var dataSection [g.DataSectionLength]byte
+	copy(dataSection[:], data)
+
+	var textSection [g.TextSectionLength]byte
+	copy(textSection[:], text)
+
+	vm := vm.NewVirtualMachine(dataSection, textSection)
+
+	fmt.Printf("vm:\n%v", vm)
+}
+
+/*
+import (
+	"fmt"
 	"tcp-vm/shared/util"
 	"tcp-vm/shared/ofstp"
 )
@@ -29,3 +69,4 @@ func main() {
 		fmt.Printf("server got:\n%+v\n", b)
 	})
 }
+*/

@@ -19,7 +19,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	client, err := ofstp.NewClient(routerId + ":11555", 5 * time.Second)
+	client, err := ofstp.NewClient(routerId+":11555", 5*time.Second)
 	if err != nil {
 		panic(err)
 	}
@@ -28,7 +28,7 @@ func main() {
 	// register with router
 	_, err = client.Do(&ofstp.ReturnPacket{
 		ExitCode: ofstp.RegisterClientCode,
-		Output: nil,
+		Output:   nil,
 	})
 	if err != nil {
 		panic(err)
@@ -37,7 +37,7 @@ func main() {
 	// wait for "AskBusy"
 	resp, err := client.Do(&ofstp.ReturnPacket{
 		ExitCode: 0,
-		Output: nil,
+		Output:   nil,
 	})
 	if err != nil {
 		panic(err)
@@ -50,7 +50,7 @@ func main() {
 	// tell router we are free
 	_, err = client.Do(&ofstp.ReturnPacket{
 		ExitCode: ofstp.NotBusyCode,
-		Output: nil,
+		Output:   nil,
 	})
 	if err != nil {
 		panic(err)
@@ -59,7 +59,7 @@ func main() {
 	// wait for "AskStateless"
 	resp, err = client.Do(&ofstp.ReturnPacket{
 		ExitCode: 0,
-		Output: nil,
+		Output:   nil,
 	})
 	rp = resp.(*ofstp.ReturnPacket)
 	if rp.ExitCode != ofstp.AskStatelessCode {

@@ -2,6 +2,7 @@ package ofstp
 
 import (
 	"sync"
+	g "tcp-vm/shared/globals"
 	o "tcp-vm/shared/ofstp"
 )
 
@@ -102,9 +103,7 @@ func (r *Router) handleStateful(req *o.Request) {
 	sp := req.Packet.(*o.StatefulPacket)
 	sess := r.sessions[req]
 
-	const HaltFlag = 0x80  // 0b 1000 0000
-	const SleepFlag = 0x40 // 0b 0100 0000
-	if sp.Flag&HaltFlag != 0 {
+	if sp.Flag&g.HaltFlag != 0 {
 		askOut, _ := o.NewReturnPacket(o.AskOutputCode, nil)
 		sess.server.Respond(askOut)
 	} else {

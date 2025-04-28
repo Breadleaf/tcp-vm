@@ -2,7 +2,6 @@ package vm
 
 import (
 	"fmt"
-	"tcp-vm/shared/util"
 )
 
 const FILE_LOG_TAG = "tcp-vm/shared/vm/vm.go"
@@ -50,7 +49,7 @@ const (
 
 type Register uint8
 
-type Memory []uint8
+type Memory [vmMemSizeWords]uint8
 
 // virtual machine
 
@@ -62,4 +61,38 @@ type VirtualMachine struct {
 	Memory Memory
 }
 
-func NewVirtualMachine()
+func NewVirtualMachine(
+	data [vmDataCount]byte,
+	text [vmTextCount]byte,
+) *VirtualMachine {
+	vm := &VirtualMachine{
+		R0: Register(0),
+		R1: Register(0),
+		SP: Register(0),
+		PC: Register(0),
+	}
+
+	copy(vm.Memory[vmDataStart:vmDataEnd+1], data[:]) // end is exclusive
+
+	for i := vmDataEnd + 1; i <= vmStackEnd; i++ {
+		vm.Memory[i] = 0
+	}
+
+	vm.Memory[vmFlagStart] = 0
+
+	copy(vm.Memory[vmTextStart:vmTextEnd+1], text[:]) // end is exclusive
+
+	return vm
+}
+
+func (vm *VirtualMachine) String() string {
+	out := ""
+	out += fmt.Sprintf(
+		"R0: %d, R1: %d, SP: %d, PC: %d\n",
+		vm.R0, vm.R1, vm.SP, vm.PC,
+	)
+	for idx, byt := range vm.Memory {
+		out += fmt.Sprintf("%d: %08b", idx, byt)
+	}
+	return out
+}
