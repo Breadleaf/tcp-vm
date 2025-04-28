@@ -1,0 +1,123 @@
+hidden routerCount: UInt16(this > 0) = 1
+
+hidden serverPerCount: UInt16(this > 0) = 1
+hidden clientPerCount: UInt16(this > 0) = 1
+
+typealias Port = UInt16(this >= 1_024 && this <= 49_000)
+hidden defaultPort: Port = 11_555
+
+typealias ID = String(this.length > 0)
+
+open class Service {
+	name: ID
+	port: Port
+}
+
+class Router extends Service {}
+
+class Server extends Service {
+	router_id: ID
+}
+
+class Client extends Service {
+	router_id: ID
+}
+
+hidden routers = IntSeq(0, routerCount - 1).map((i) -> new Router {
+	name = "rtr-\(i)"
+	port = defaultPort
+})
+
+hidden servers = routers.mapIndexed(
+	(rid, rtr) -> IntSeq(0, serverPerCount - 1).map(
+		(i) -> new Server {
+			name = "svr-\(rid * serverPerCount + i)"
+			port = defaultPort
+			router_id = rtr.name
+		}
+	)
+).flatten()
+
+hidden clients = routers.mapIndexed(
+	(rid, rtr) -> IntSeq(0, clientPerCount - 1).map(
+		(i) -> new Client {
+			name = "cln-\(rid * clientPerCount + i)"
+			port = defaultPort
+			router_id = rtr.name
+		}
+	)
+).flatten()
+
+services {
+	// create routers
+	for (router in routers) {
+		[router.name] {
+			build {
+      				context = "../router"
+      				dockerfile = "Dockerfile"
+			}
+			ports = new Listing {
+				"\(router.port):\(router.port)"
+			}
+			healthcheck {
+				test = List(
+					"CMD",
+					"true"
+				)
+				interval = 5.s
+				timeout = 5.s
+				retries = 3
+			}
+		}
+	}
+	// create servers
+	for (server in servers) {
+		[server.name] {
+			build {
+      				context = "../server"
+      				dockerfile = "Dockerfile"
+			}
+			ports = new Listing {
+				"\(server.port):\(server.port)"
+			}
+			environment = new Listing {
+				"ROUTER_ID=\(server.router_id)"
+			}
+			depends_on {
+				[server.router_id] {
+					condition = "service_healthy"
+					restart = true
+				}
+			}
+		}
+	}
+	// create clients
+	for (client in clients) {
+		[client.name] {
+			build {
+      				context = "../client"
+      				dockerfile = "Dockerfile"
+			}
+			ports = new Listing {
+				"\(client.port):\(client.port)"
+			}
+			environment = new Listing {
+				"ROUTER_ID=\(client.router_id)"
+			}
+			depends_on {
+				[client.router_id] {
+					condition = "service_healthy"
+					restart = true
+				}
+			}
+		}
+	}
+}
+
+output {
+	renderer = new YamlRenderer {
+		converters {
+			[Duration] = (d) -> "\(d.value)\(d.unit)"
+		}
+	}
+}

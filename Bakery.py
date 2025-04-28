@@ -57,7 +57,7 @@ def fmt() -> bool:
     return True
 
 @b.target
-def docker_compose() -> bool:
+def docker_compose_full() -> bool:
     """clean compile docker_compose.yaml, start all servers"""
 
     docker_compose_file = f"{DEPLOY_DIR}/docker_compose.yaml"
@@ -67,6 +67,24 @@ def docker_compose() -> bool:
     pkl_command = " ".join([
         "pkl eval -f yaml",
         f"{DEPLOY_DIR}/infrastructure.pkl > {docker_compose_file}"
+    ])
+    b.shell_strict(pkl_command)
+
+    b.shell_strict(f"docker compose -f {docker_compose_file} up --build")
+
+    return True
+
+@b.target
+def docker_compose_small() -> bool:
+    """clean compile docker_compose.yaml from ./deploy/small_test.pkl, start all servers"""
+
+    docker_compose_file = f"{DEPLOY_DIR}/docker_compose.yaml"
+
+    b.shell_pass(f"rm {docker_compose_file}")
+
+    pkl_command = " ".join([
+        "pkl eval -f yaml",
+        f"{DEPLOY_DIR}/small_test.pkl > {docker_compose_file}"
     ])
     b.shell_strict(pkl_command)
 
