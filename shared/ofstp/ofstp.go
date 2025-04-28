@@ -208,3 +208,12 @@ func ParsePacket(raw []byte) (Packet, error) {
 		return nil, fmt.Errorf("unknown packet type 0x%02X", raw[0])
 	}
 }
+
+const (
+	RegisterClientCode = 0x10
+	RegisterServerCode = 0x11
+	AskBusyCode        = 0x20
+	NotBusyCode        = 0x21
+	AskStatelessCode   = 0x22
+	AskOutputCode      = 0x23
+)

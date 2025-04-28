@@ -18,7 +18,7 @@ func NewClient(addr string, timeout time.Duration) (*Client, error) {
 		return nil, err
 	}
 	return &Client{
-		conn: conn,
+		conn:    conn,
 		timeout: timeout,
 	}, nil
 }
@@ -57,7 +57,7 @@ func (c *Client) Do(packet Packet) (Packet, error) {
 	case Stateless:
 		restLength = 16 + 175
 	case Stateful:
-		restLength = (1*4) + 16 + 64 + 1 + 175
+		restLength = (1 * 4) + 16 + 64 + 1 + 175
 	case Return:
 		// read the exit code
 		exit := make([]byte, 1)

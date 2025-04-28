@@ -19,33 +19,53 @@ func main() {
 		os.Exit(1)
 	}
 
-	// TODO: make a ROUTER_PORT field in the docker file too
-
-	routerIp := fmt.Sprintf("%s:11555", routerId)
-
-	client, err := ofstp.NewClient(routerIp, 5 * time.Second)
+	client, err := ofstp.NewClient(routerId + ":11555", 5 * time.Second)
 	if err != nil {
-		fmt.Printf("Failed to init client: %v\n", err)
-		os.Exit(1)
+		panic(err)
 	}
 	defer client.Close()
 
-	pkt, err := ofstp.NewReturnPacket(0x00, []byte("Hello from client"))
+	// register with router
+	_, err = client.Do(&ofstp.ReturnPacket{
+		ExitCode: ofstp.RegisterClientCode,
+		Output: nil,
+	})
 	if err != nil {
-		fmt.Printf("Failed to create return packet: %v\n", err)
-		os.Exit(1)
+		panic(err)
 	}
 
-	resp, err := client.Do(pkt)
+	// wait for "AskBusy"
+	resp, err := client.Do(&ofstp.ReturnPacket{
+		ExitCode: 0,
+		Output: nil,
+	})
 	if err != nil {
-		fmt.Printf("Error while sending packet: %v\n", err)
-		os.Exit(1)
+		panic(err)
+	}
+	rp := resp.(*ofstp.ReturnPacket)
+	if rp.ExitCode != ofstp.AskBusyCode {
+		panic("expected AskBusy")
 	}
 
-	retPacket, ok := resp.(*ofstp.ReturnPacket)
-	if !ok {
-		fmt.Printf("Expected return packet, got: %T\n", resp)
+	// tell router we are free
+	_, err = client.Do(&ofstp.ReturnPacket{
+		ExitCode: ofstp.NotBusyCode,
+		Output: nil,
+	})
+	if err != nil {
+		panic(err)
 	}
 
-	fmt.Printf("got response: %v\n", retPacket)
+	// wait for "AskStateless"
+	resp, err = client.Do(&ofstp.ReturnPacket{
+		ExitCode: 0,
+		Output: nil,
+	})
+	rp = resp.(*ofstp.ReturnPacket)
+	if rp.ExitCode != ofstp.AskStatelessCode {
+		panic("expected AskStateless")
+	}
+
+	// send real Stateless packet
+
 }
