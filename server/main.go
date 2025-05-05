@@ -14,8 +14,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println(os.Args[1])
-
 	data, text, err := assembler.Assemble(os.Args[1])
 	if err != nil {
 		fmt.Printf("assembler does like that one: %v", err)
@@ -30,6 +28,10 @@ func main() {
 
 	vm := new(vm.VirtualMachine)
 	vm.ResetFromStateless(data, text)
+	if err := vm.RunUntilStop(); err != nil {
+		fmt.Printf("explode: %v\n", err)
+		os.Exit(1)
+	}
 
 	fmt.Printf("vm:\n%v", vm)
 }

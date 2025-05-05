@@ -177,11 +177,16 @@ func (st *syntaxTree) compile() ([g.DataSectionLength]byte, [g.TextSectionLength
 				return ErrorData, ErrorText, fmt.Errorf("duplicate text label '%s'", lbl)
 			}
 			textLabels[lbl] = addr + vm.TextStart
-		case "xInstruction", "yInstruction", "zInstruction":
+		case "xInstruction", "yInstruction":
 			if addr >= g.TextSectionLength {
 				return ErrorData, ErrorText, fmt.Errorf("text section overflow: exceeds %d words", g.TextSectionLength)
 			}
 			addr++
+		case "zInstruction":
+			if addr + 1 >= g.TextSectionLength {
+				return ErrorData, ErrorText, fmt.Errorf("text section overflow: exceeds %d words", g.TextSectionLength)
+			}
+			addr += 2
 		}
 	}
 	// this is technically not needed, I will enforce it for good code practice
@@ -234,6 +239,15 @@ func (st *syntaxTree) compile() ([g.DataSectionLength]byte, [g.TextSectionLength
 	textOut := [g.TextSectionLength]byte{}
 	for i, v := range textSection {
 		textOut[i] = byte(v)
+	}
+
+	fmt.Println("data labels:")
+	for k, v := range dataLabels {
+		fmt.Printf("%v, %v\n", k, v)
+	}
+	fmt.Println("text labels:")
+	for k, v := range textLabels {
+		fmt.Printf("%v, %v\n", k, v)
 	}
 
 	return dataOut, textOut, nil
