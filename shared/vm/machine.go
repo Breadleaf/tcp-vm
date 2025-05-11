@@ -1,8 +1,9 @@
 package vm
 
 import (
-        "fmt"
-        "tcp-vm/shared/util"
+	"fmt"
+	g "tcp-vm/shared/globals"
+	"tcp-vm/shared/util"
 )
 
 const FILE_LOG_TAG = "tcp-vm/shared/vm/vm.go"
@@ -10,17 +11,17 @@ const FILE_LOG_TAG = "tcp-vm/shared/vm/vm.go"
 // memory size calculations
 
 const (
-        // see spec sheet
-        vmMemSizeWords = 16 + 64 + 1 + 175
-        vmMemSizeBytes = vmMemSizeWords // 1 word : 1 byte
+	// see spec sheet
+	vmMemSizeWords = 16 + 64 + 1 + 175
+	vmMemSizeBytes = vmMemSizeWords // 1 word : 1 byte
 )
 
 // memory partitioning
 
 const (
-        vmDataStart = 0
-        vmDataCount = 16
-        vmDataEnd   = vmDataStart + vmDataCount - 1
+	vmDataStart = 0
+	vmDataCount = 16
+	vmDataEnd   = vmDataStart + vmDataCount - 1
 )
 
 const (
@@ -107,10 +108,10 @@ func (vm *VirtualMachine) ResetFromStateful(
 	vm.SP = Register(sp)
 	vm.PC = Register(pc)
 
-	copy(vm.Memory[vmDataStart:vmDataEnd+1], data[:]) // end is exclusive
+	copy(vm.Memory[vmDataStart:vmDataEnd+1], data[:])    // end is exclusive
 	copy(vm.Memory[vmStackStart:vmStackEnd+1], stack[:]) // end is exclusive
-	copy(vm.Memory[vmFlagStart:vmFlagEnd+1], flag[:]) // end is exclusive
-	copy(vm.Memory[vmTextStart:vmTextEnd+1], text[:]) // end is exclusive
+	copy(vm.Memory[vmFlagStart:vmFlagEnd+1], flag[:])    // end is exclusive
+	copy(vm.Memory[vmTextStart:vmTextEnd+1], text[:])    // end is exclusive
 
 	vm.Output = ""
 }
@@ -147,14 +148,14 @@ func (vm *VirtualMachine) RunUntilStop() error {
 	defer util.LogEnd(FILE_LOG_TAG)
 
 	const MaxStepsPerRun = 0xFFFF
-	const BottomTwoMask = 0x03 // 0b 0000 0011
+	const BottomTwoMask = 0x03   // 0b 0000 0011
 	const BottomThreeMask = 0x07 // 0b 0000 0111
 
 	const (
 		InstXa = 0x00
 		InstXb = 0x01
-		InstY = 0x02
-		InstZ = 0x03
+		InstY  = 0x02
+		InstZ  = 0x03
 	)
 
 	const (
@@ -258,29 +259,52 @@ func (vm *VirtualMachine) RunUntilStop() error {
 			case NOT:
 				*ra = ^(*ra)
 			case PSH:
-				if vm.SP < vmStackStart {
-					return fmt.Errorf("segfault: stack underflow")
-				}
-				if vm.SP > vmStackEnd {
-					return fmt.Errorf("segfault: stack overflow")
-				}
+				if vm.SP < vmStackStart || vm.SP > vmStackEnd {
+                    return fmt.Errorf("segfault on PSH: stack out of bounds")
+                }
 
 				vm.Memory[vm.SP] = byte(*ra)
 				vm.SP++ // grow stack down
 			case POP:
-				if vm.SP < vmStackStart {
-					return fmt.Errorf("segfault: stack underflow")
-				}
-				if vm.SP > vmStackEnd {
-					return fmt.Errorf("segfault: stack overflow")
-				}
+				if vm.SP <= vmStackStart {
+                    return fmt.Errorf("segfault on POP: underflow")
+                }
 
-				*ra = Register(vm.Memory[vm.SP])
 				vm.SP-- // shrink stack up
+				*ra = Register(vm.Memory[vm.SP])
 			case SYS:
-				fmt.Printf("SYSTEM CALL: %d\n", *ra)
-				fmt.Printf("step count: %d\n", stepCount)
-				return nil
+				// fmt.Printf("SYSTEM CALL: %d\n", *ra)
+				// fmt.Printf("step count: %d\n", stepCount)
+				// return nil
+
+				// syscall number in *ra
+                callNum := byte(*ra)
+                // argument on top of stack
+                if vm.SP <= vmStackStart {
+                    return fmt.Errorf("segfault on SYS arg pop")
+                }
+                vm.SP--
+                arg := vm.Memory[vm.SP]
+
+				// TODO: note somewhere in docs that syscall will erase the process flag
+                switch callNum {
+                case 0: // sys_exit
+                    vm.R0 = Register(arg)
+                    vm.Memory[vmFlagStart] = g.HaltFlag
+
+                case 1: // sys_sleep
+                    vm.R0 = Register(arg)
+                    vm.Memory[vmFlagStart] = g.SleepFlag
+
+                default:
+                    // unknown syscall exit 255 + message
+					// TODO: standardize this
+                    vm.R0 = 255
+                    vm.Memory[vmFlagStart] = g.HaltFlag
+                    vm.Output = fmt.Sprintf("unknown system call (%d)", callNum)
+                }
+                // in all cases, we stop execution here
+                return nil
 			}
 
 		case InstZ:
@@ -291,7 +315,7 @@ func (vm *VirtualMachine) RunUntilStop() error {
 			switch instSpecifier {
 			case JMP:
 				mask := current & BottomThreeMask
-				if vm.Memory[vmFlagStart] & mask != 0 {
+				if vm.Memory[vmFlagStart]&mask != 0 {
 					vm.PC = Register(imm)
 				}
 			case LDI:

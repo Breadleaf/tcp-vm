@@ -2,70 +2,84 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
-	"tcp-vm/shared/ofstp"
-	"tcp-vm/shared/util"
 	"time"
+
+	"tcp-vm/shared/assembler"
+	o "tcp-vm/shared/ofstp"
 )
 
 func main() {
-	logTag := "tcp-vm/client - main.go - main()"
-	util.LogStart(logTag)
-	defer util.LogEnd(logTag)
+    if len(os.Args) != 2 {
+        fmt.Println("usage: client <program.asm>")
+        os.Exit(1)
+    }
+    asm := os.Args[1]
 
-	routerId := os.Getenv("ROUTER_ID")
-	if routerId == "" {
-		fmt.Println("ROUTER_ID is not set, unrecoverable...")
-		os.Exit(1)
-	}
+    data, text, err := assembler.Assemble(asm)
+    if err != nil {
+        log.Fatal(err)
+    }
 
-	client, err := ofstp.NewClient(routerId+":11555", 5*time.Second)
-	if err != nil {
-		panic(err)
-	}
-	defer client.Close()
+    routerID := os.Getenv("ROUTER_ID")
+    if routerID == "" {
+        log.Fatal("ROUTER_ID not set")
+    }
+    addr := routerID + ":11555"
 
-	// register with router
-	_, err = client.Do(&ofstp.ReturnPacket{
-		ExitCode: ofstp.RegisterClientCode,
-		Output:   nil,
-	})
-	if err != nil {
-		panic(err)
-	}
+    cli, err := o.NewClient(addr, 5*time.Second)
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer cli.Close()
 
-	// wait for "AskBusy"
-	resp, err := client.Do(&ofstp.ReturnPacket{
-		ExitCode: 0,
-		Output:   nil,
-	})
-	if err != nil {
-		panic(err)
-	}
-	rp := resp.(*ofstp.ReturnPacket)
-	if rp.ExitCode != ofstp.AskBusyCode {
-		panic("expected AskBusy")
-	}
+    // Register and immediately receive AskBusy
+    pkt, err := cli.Do(&o.ReturnPacket{ExitCode: o.RegisterClientCode})
+    if err != nil {
+        log.Fatal(err)
+    }
+    rp := pkt.(*o.ReturnPacket)
+    if rp.ExitCode != o.AskBusyCode {
+        log.Fatalf("expected AskBusy; got %d", rp.ExitCode)
+    }
 
-	// tell router we are free
-	_, err = client.Do(&ofstp.ReturnPacket{
-		ExitCode: ofstp.NotBusyCode,
-		Output:   nil,
-	})
-	if err != nil {
-		panic(err)
-	}
+    // Tell the router we are not busy
+    _, err = cli.Do(&o.ReturnPacket{ExitCode: o.NotBusyCode})
+    if err != nil {
+        log.Fatal(err)
+    }
 
-	// wait for "AskStateless"
-	resp, err = client.Do(&ofstp.ReturnPacket{
-		ExitCode: 0,
-		Output:   nil,
-	})
-	rp = resp.(*ofstp.ReturnPacket)
-	if rp.ExitCode != ofstp.AskStatelessCode {
-		panic("expected AskStateless")
-	}
+    // Receive AskStateless
+    pkt, err = cli.Do(&o.ReturnPacket{})
+    if err != nil {
+        log.Fatal(err)
+    }
+    rp = pkt.(*o.ReturnPacket)
+    if rp.ExitCode != o.AskStatelessCode {
+        log.Fatalf("expected AskStateless; got %d", rp.ExitCode)
+    }
 
-	// send real Stateless packet
+    // Send the real Stateless packet
+    stateless, _ := o.NewStatelessPacket(data[:], text[:])
+    _, err = cli.Do(stateless)
+    if err != nil {
+        log.Fatal(err)
+    }
 
+    // Finally, read back exit/output
+    for {
+        pkt, err := cli.Do(&o.ReturnPacket{ExitCode: 0})
+        if err != nil {
+            log.Fatal(err)
+        }
+        if rp, ok := pkt.(*o.ReturnPacket); ok {
+            if len(rp.Output) > 0 {
+                fmt.Printf("OUTPUT: %s\n", string(rp.Output))
+                return
+            }
+            fmt.Printf("Exit code: %d\n", rp.ExitCode)
+            return
+        }
+    }
 }

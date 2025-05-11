@@ -183,7 +183,7 @@ func (st *syntaxTree) compile() ([g.DataSectionLength]byte, [g.TextSectionLength
 			}
 			addr++
 		case "zInstruction":
-			if addr + 1 >= g.TextSectionLength {
+			if addr+1 >= g.TextSectionLength {
 				return ErrorData, ErrorText, fmt.Errorf("text section overflow: exceeds %d words", g.TextSectionLength)
 			}
 			addr += 2
