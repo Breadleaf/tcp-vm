@@ -260,15 +260,15 @@ func (vm *VirtualMachine) RunUntilStop() error {
 				*ra = ^(*ra)
 			case PSH:
 				if vm.SP < vmStackStart || vm.SP > vmStackEnd {
-                    return fmt.Errorf("segfault on PSH: stack out of bounds")
-                }
+					return fmt.Errorf("segfault on PSH: stack out of bounds")
+				}
 
 				vm.Memory[vm.SP] = byte(*ra)
 				vm.SP++ // grow stack down
 			case POP:
 				if vm.SP <= vmStackStart {
-                    return fmt.Errorf("segfault on POP: underflow")
-                }
+					return fmt.Errorf("segfault on POP: underflow")
+				}
 
 				vm.SP-- // shrink stack up
 				*ra = Register(vm.Memory[vm.SP])
@@ -278,33 +278,33 @@ func (vm *VirtualMachine) RunUntilStop() error {
 				// return nil
 
 				// syscall number in *ra
-                callNum := byte(*ra)
-                // argument on top of stack
-                if vm.SP <= vmStackStart {
-                    return fmt.Errorf("segfault on SYS arg pop")
-                }
-                vm.SP--
-                arg := vm.Memory[vm.SP]
+				callNum := byte(*ra)
+				// argument on top of stack
+				if vm.SP <= vmStackStart {
+					return fmt.Errorf("segfault on SYS arg pop")
+				}
+				vm.SP--
+				arg := vm.Memory[vm.SP]
 
 				// TODO: note somewhere in docs that syscall will erase the process flag
-                switch callNum {
-                case 0: // sys_exit
-                    vm.R0 = Register(arg)
-                    vm.Memory[vmFlagStart] = g.HaltFlag
+				switch callNum {
+				case 0: // sys_exit
+					vm.R0 = Register(arg)
+					vm.Memory[vmFlagStart] = g.HaltFlag
 
-                case 1: // sys_sleep
-                    vm.R0 = Register(arg)
-                    vm.Memory[vmFlagStart] = g.SleepFlag
+				case 1: // sys_sleep
+					vm.R0 = Register(arg)
+					vm.Memory[vmFlagStart] = g.SleepFlag
 
-                default:
-                    // unknown syscall exit 255 + message
+				default:
+					// unknown syscall exit 255 + message
 					// TODO: standardize this
-                    vm.R0 = 255
-                    vm.Memory[vmFlagStart] = g.HaltFlag
-                    vm.Output = fmt.Sprintf("unknown system call (%d)", callNum)
-                }
-                // in all cases, we stop execution here
-                return nil
+					vm.R0 = 255
+					vm.Memory[vmFlagStart] = g.HaltFlag
+					vm.Output = fmt.Sprintf("unknown system call (%d)", callNum)
+				}
+				// in all cases, we stop execution here
+				return nil
 			}
 
 		case InstZ:

@@ -6,10 +6,10 @@ import (
 )
 
 const (
-	dataSize  = 16
-	stackSize = 64
-	flagSize  = 1
-	textSize  = 1
+	dataSize      = 16
+	stackSize     = 64
+	flagSize      = 1
+	textSize      = 1
 	maxRetPayload = 1498
 )
 
@@ -41,11 +41,11 @@ type Packet interface {
 }
 
 func MustMarshal(p Packet) []byte {
-    buf, err := p.Marshal()
-    if err != nil {
-        panic(fmt.Errorf("failed to marshal %T: %w", p, err))
-    }
-    return buf
+	buf, err := p.Marshal()
+	if err != nil {
+		panic(fmt.Errorf("failed to marshal %T: %w", p, err))
+	}
+	return buf
 }
 
 // stateless packet (1 + 16 + 175)
