@@ -194,6 +194,15 @@ func (st *syntaxTree) compile() ([g.DataSectionLength]byte, [g.TextSectionLength
 		return ErrorData, ErrorText, fmt.Errorf("missing 'main' label in text section")
 	}
 
+	// merge dataLabels and textLabels
+	allLabels := make(map[string]uint8, len(textLabels) + len(dataLabels))
+	for name, addr := range textLabels {
+		allLabels[name] = addr
+	}
+	for name, addr := range dataLabels {
+		allLabels[name] = addr
+	}
+
 	// Emit code over instrs
 	for _, node := range instrs {
 		switch node.Symbol.Value {
@@ -223,7 +232,8 @@ func (st *syntaxTree) compile() ([g.DataSectionLength]byte, [g.TextSectionLength
 				}
 				textSection = append(textSection, b, imm)
 			} else {
-				b, imm, err := compileZ(op, args, dataLabels)
+				// b, imm, err := compileZ(op, args, dataLabels)
+				b, imm, err := compileZ(op, args, allLabels)
 				if err != nil {
 					return ErrorData, ErrorText, err
 				}
